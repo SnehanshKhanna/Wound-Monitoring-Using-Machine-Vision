@@ -1,6 +1,6 @@
 def compute_healing_score(current_features, baseline_features=None):
 
-    # 🔥 0. No wound case
+    # 0. No wound case
     if current_features.get("area", 0) == 0:
         return 100
 
@@ -59,7 +59,7 @@ def compute_healing_score(current_features, baseline_features=None):
     elif redness < 80:
         score -= 5
 
-    # 🔥 6. Safety overrides
+    #  6. Safety overrides
     if irr > 4.5:
         score = min(score, 40)
 

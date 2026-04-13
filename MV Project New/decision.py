@@ -7,7 +7,7 @@ def risk_level(healing_score, features):
     area_percent = features.get("area_percent", 0)
 
     # ---------------------------------------------------------
-    # 🔥 0. NO WOUND DETECTED (VERY IMPORTANT)
+    # 0. NO WOUND DETECTED (VERY IMPORTANT)
     # ---------------------------------------------------------
     if area == 0 or area_percent < 0.1:
         return "No Significant Wound Detected"
@@ -38,4 +38,4 @@ def risk_level(healing_score, features):
     elif healing_score >= 50:
         return "Moderate Risk"
     else:
-        return "Low Risk (Minor / Superficial)"
+        return "High Risk (Poor Healing)"
