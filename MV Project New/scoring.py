@@ -1,4 +1,4 @@
-def calculate_infection_risk(features):
+def infection_risk_score(features):
     """
     Infection risk (0–100) using:
     - Yellow tissue (slough/pus)
@@ -105,7 +105,7 @@ def compute_healing_score(current_features, baseline_features=None):
     # ---------------------------------------------------------
     # 🔥 6. Infection Risk (SMOOTH PENALTY)
     # ---------------------------------------------------------
-    infection_risk = calculate_infection_risk(current_features)
+    infection_risk = infection_risk_score(current_features)
     score -= (infection_risk * 0.3)
 
     # ---------------------------------------------------------

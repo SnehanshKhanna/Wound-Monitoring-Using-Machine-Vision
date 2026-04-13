@@ -8,7 +8,7 @@ from predict import predict_mask
 from features import extract_features
 from decision import risk_level
 from scoring import compute_healing_score
-from scoring import calculate_infection_risk
+from scoring import infection_risk_score
 
 from metrics import dice_score, iou_score
 from visualize import show_results
@@ -46,7 +46,7 @@ def analyze(image_path, user_id="default_user", gt_mask_path=None, visualize=Fal
     # Scoring + Risk
     # -------------------------------
     healing_score = compute_healing_score(features)
-    infection_risk = calculate_infection_risk(features)
+    infection_risk_result = infection_risk_score(features)
     risk = risk_level(healing_score, features)
 
     # -------------------------------
@@ -69,7 +69,7 @@ def analyze(image_path, user_id="default_user", gt_mask_path=None, visualize=Fal
         "redness": features["redness"],
         "periwound_redness": features["periwound_redness"],
         "risk_level": risk,
-        "infection_risk": infection_risk,
+        "infection_risk_score": infection_risk_result,
         "healing_score": healing_score,
 
         # Texture
@@ -138,25 +138,25 @@ def analyze(image_path, user_id="default_user", gt_mask_path=None, visualize=Fal
 # -------------------------------
 # LOCAL TEST
 # -------------------------------
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     test_folder = "data_wound_seg/test_images"
-#     files = [f for f in os.listdir(test_folder) if f.endswith((".jpg", ".png", ".jpeg"))]
+    test_folder = "data_wound_seg/test_images"
+    files = [f for f in os.listdir(test_folder) if f.endswith((".jpg", ".png", ".jpeg"))]
 
-#     # if len(files) == 0:
-#     #     print(" No images found")
-#     # else:
-#     #     test_image = os.path.join(test_folder, random.choice(files))
+    # if len(files) == 0:
+    #     print(" No images found")
+    # else:
+    #     test_image = os.path.join(test_folder, random.choice(files))
 
-#     #     print("Using image:", test_image)
+    #     print("Using image:", test_image)
 
-#         result = analyze(
-#             image_path="fusc_0292.png",
-#             user_id="test_user",   # SAME USER FOR TEST
-#             gt_mask_path=None,
-#             visualize=True
-#         )
+    result = analyze(
+        image_path="fusc_0023.png",
+        user_id="test_user",   # SAME USER FOR TEST
+        gt_mask_path=None,
+        visualize=False
+    )
 
-#         print("\n✅ FINAL RESULT:")
-#         print(result)
+    print("\n✅ FINAL RESULT:")
+    print(result)
     

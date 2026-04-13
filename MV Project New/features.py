@@ -167,8 +167,8 @@ def extract_tissue_composition_kmeans(image, mask, k=4, debug=False):
 
         h, s, v = center_hsv
 
-        if debug:
-            print(f"Cluster {i}: HSV = {h, s, v}, Count = {count}")
+        # if debug:
+        #     print(f"Cluster {i}: HSV = {h, s, v}, Count = {count}")
 
         # -----------------------------------------------------
         #  IMPROVED CLASSIFICATION LOGIC
@@ -316,7 +316,7 @@ def extract_features(mask, image):
     redness = np.clip(np.mean(r_channel[mask > 0]), 0, 255) if area > 0 else 0
 
     texture = extract_texture_features(image, mask)
-    tissue = extract_tissue_composition_kmeans(image, mask,k=4, debug=True)
+    tissue = extract_tissue_composition_kmeans(image, mask,k=4, debug=False)
     irregularity = compute_edge_irregularity(area, perimeter)
     periwound = extract_periwound_features(image, mask)
 

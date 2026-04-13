@@ -1,4 +1,4 @@
-from scoring import calculate_infection_risk
+from scoring import infection_risk_score
 
 def risk_level(healing_score, features):
 
@@ -17,7 +17,7 @@ def risk_level(healing_score, features):
     # ---------------------------------------------------------
     # 🔥 Infection signal
     # ---------------------------------------------------------
-    infection_risk = calculate_infection_risk(features)
+    infection_risk = infection_risk_score(features)
 
     # ---------------------------------------------------------
     # 1. HIGH-RISK OVERRIDES (STRUCTURAL FIRST)
