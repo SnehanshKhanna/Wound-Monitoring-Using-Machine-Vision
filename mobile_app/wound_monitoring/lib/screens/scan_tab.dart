@@ -23,8 +23,8 @@ class ScanTab extends ConsumerStatefulWidget {
 class _ScanTabState extends ConsumerState<ScanTab> {
   final ImagePicker _picker = ImagePicker();
   final Dio _dio = Dio();
-  
-  final String apiUrl = 'https://commercial-combining-electric-axis.trycloudflare.com/analyze'; 
+
+  final String apiUrl = 'https://snehanshkhanna-mv-backend.hf.space/analyze';
 
   File? _selectedImage;
   int _pipelineStep = -1;
@@ -36,6 +36,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
   double _area = 0;
   double _redness = 0;
   double _healingScore = 0;
+  double _infectionRiskScore = 0;
   String _riskLevelStr = '';
   String _healingTrend = 'N/A';
 
@@ -48,14 +49,13 @@ class _ScanTabState extends ConsumerState<ScanTab> {
         sourcePath: uncroppedImage.path,
         uiSettings: [
           AndroidUiSettings(
-              toolbarTitle: 'Crop Wound Region',
-              toolbarColor: AppTheme.primaryBlue,
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false),
-          IOSUiSettings(
-            title: 'Crop Wound Region',
+            toolbarTitle: 'Crop Wound Region',
+            toolbarColor: AppTheme.primaryBlue,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.original,
+            lockAspectRatio: false,
           ),
+          IOSUiSettings(title: 'Crop Wound Region'),
         ],
       );
 
@@ -75,7 +75,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
       // Step 2 & 3: Network Call (Segment & Extract)
       final localUser = ref.read(profileProvider);
       FormData formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(_selectedImage!.path, filename: 'wound.jpg'),
+        'image': await MultipartFile.fromFile(
+          _selectedImage!.path,
+          filename: 'wound.jpg',
+        ),
         'user_id': localUser?.id ?? 'default_user',
       });
 
@@ -83,14 +86,16 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 
       // We launch BOTH requests (Flask API + ImgBB) concurrently!
       final flaskFuture = _dio.post(
-        apiUrl, 
+        apiUrl,
         data: formData,
         options: Options(
           sendTimeout: const Duration(seconds: 15),
           receiveTimeout: const Duration(seconds: 15),
         ),
       );
-      final imgbbFuture = ImgBBApiService.uploadImage(File(_selectedImage!.path));
+      final imgbbFuture = ImgBBApiService.uploadImage(
+        File(_selectedImage!.path),
+      );
 
       // Wait for both to finish simultaneously
       final results = await Future.wait([flaskFuture, imgbbFuture]);
@@ -102,15 +107,17 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 
       if (flaskResponse.statusCode == 200 && flaskResponse.data != null) {
         final data = flaskResponse.data as Map<String, dynamic>;
-        
+
         double parsedArea = (data['area'] ?? 0).toDouble();
         double parsedRedness = (data['redness'] ?? 0).toDouble();
         double parsedScore = (data['healing_score'] ?? 0).toDouble();
+        double parsedInfectionRisk = (data['infection_risk_score'] ?? 0)
+            .toDouble();
         String parsedRisk = data['risk_level'] ?? 'Unknown';
         String compTrend = data['healing_trend'] ?? 'N/A';
 
         final user = ref.read(profileProvider);
-        
+
         /* 
         // FRONTEND TREND CALCULATION COMMENTED OUT - NOW HANDLED BY API
         // Fetch previous record to compute trend
@@ -140,40 +147,48 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           _area = parsedArea;
           _redness = parsedRedness;
           _healingScore = parsedScore;
+          _infectionRiskScore = parsedInfectionRisk;
           _riskLevelStr = parsedRisk;
           _healingTrend = compTrend;
-          
+
           _pipelineStep = 4; // Assess
         });
-        
+
         // Auto-Save to Firestore since we have the ImgBB Link!
         if (imgbbUrl != null && user != null) {
+          final clinicalNotes =
+              'Analysis calculated a $_riskLevelStr with a $_healingTrend trend compared to last reading. The overall Healing Score rests at $_healingScore/100.';
+
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.id)
               .collection('history')
               .add({
-            'imageUrl': imgbbUrl,
-            'timestamp': DateTime.now().toIso8601String(),
-            'notes': 'Recorded via Scan Tab.',
-            'area': _area,
-            'redness': _redness,
-            'healing_score': _healingScore,
-            'risk_level': _riskLevelStr,
-            'healing_trend': _healingTrend,
-          });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-             content: Text('Auto-saved to Cloud Profile!'), backgroundColor: AppTheme.accentSafe
-          ));
+                'imageUrl': imgbbUrl,
+                'timestamp': DateTime.now().toIso8601String(),
+                'notes': 'Recorded via Scan Tab.',
+                'area': _area,
+                'redness': _redness,
+                'infection_risk_score': _infectionRiskScore,
+                'healing_score': _healingScore,
+                'risk_level': _riskLevelStr,
+                'healing_trend': _healingTrend,
+                'clinical_notes': clinicalNotes,
+                'analysis_raw': data,
+              });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Auto-saved to Cloud Profile!'),
+              backgroundColor: AppTheme.accentSafe,
+            ),
+          );
         }
 
         await Future.delayed(const Duration(milliseconds: 400));
         setState(() => _showResults = true);
-
       } else {
         throw Exception("Invalid response from server");
       }
-
     } catch (e) {
       setState(() {
         _pipelineStep = -1;
@@ -197,16 +212,6 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     return RiskLevel.low;
   }
 
-  double _getRiskValue() {
-    switch (_riskLevelStr.toLowerCase()) {
-      case 'high risk': return 0.85;
-      case 'moderate risk': return 0.50;
-      case 'low risk': return 0.20;
-      case 'no significant wound detected': return 0.10;
-      default: return 0.0;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,7 +222,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             IconButton(
               icon: const Icon(CupertinoIcons.refresh),
               onPressed: _reset,
-            )
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -234,9 +239,15 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.accentHighRisk),
                 ),
-                child: Text(_errorMessage, style: const TextStyle(color: Colors.white)),
+                child: Text(
+                  _errorMessage,
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-            if (_selectedImage == null) _buildImagePickerArea() else _buildPreviewArea(),
+            if (_selectedImage == null)
+              _buildImagePickerArea()
+            else
+              _buildPreviewArea(),
             if (_pipelineStep >= 0 && !_showResults) ...[
               const SizedBox(height: 32),
               const Text(
@@ -257,7 +268,9 @@ class _ScanTabState extends ConsumerState<ScanTab> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surfaceLight,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -265,16 +278,30 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             child: Wrap(
               children: [
                 ListTile(
-                  leading: const Icon(CupertinoIcons.camera_fill, color: AppTheme.primaryBlue, size: 28),
-                  title: const Text('Take a Photo', style: TextStyle(fontSize: 18)),
+                  leading: const Icon(
+                    CupertinoIcons.camera_fill,
+                    color: AppTheme.primaryBlue,
+                    size: 28,
+                  ),
+                  title: const Text(
+                    'Take a Photo',
+                    style: TextStyle(fontSize: 18),
+                  ),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickAndUploadImage(ImageSource.camera);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(CupertinoIcons.photo_fill, color: AppTheme.primaryBlue, size: 28),
-                  title: const Text('Choose from Gallery', style: TextStyle(fontSize: 18)),
+                  leading: const Icon(
+                    CupertinoIcons.photo_fill,
+                    color: AppTheme.primaryBlue,
+                    size: 28,
+                  ),
+                  title: const Text(
+                    'Choose from Gallery',
+                    style: TextStyle(fontSize: 18),
+                  ),
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickAndUploadImage(ImageSource.gallery);
@@ -284,7 +311,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             ),
           ),
         );
-      }
+      },
     );
   }
 
@@ -320,10 +347,7 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             const SizedBox(height: 16),
             const Text(
               'Tap to capture or upload image',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -354,7 +378,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Center(
-                child: Text('Analysis Overlay', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Analysis Overlay',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ),
         ],
@@ -363,8 +390,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
   }
 
   Widget _buildResultsArea() {
-    final RiskLevel calculatedRisk = _parseRiskLevel(_riskLevelStr);
-    
+    final riskColor = _parseRiskLevel(_riskLevelStr).color;
+    final gaugeValue = (_infectionRiskScore / 100).clamp(0.0, 1.0);
+    final gaugeRisk = _parseRiskLevel(_riskLevelStr);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 600),
       curve: Curves.fastOutSlowIn,
@@ -379,11 +408,18 @@ class _ScanTabState extends ConsumerState<ScanTab> {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(CupertinoIcons.link, size: 14, color: AppTheme.primaryBlue),
+              const Icon(
+                CupertinoIcons.link,
+                size: 14,
+                color: AppTheme.primaryBlue,
+              ),
               const SizedBox(width: 4),
               Text(
                 'Processed by Local Flask API',
-                style: TextStyle(fontSize: 12, color: AppTheme.primaryBlue.withOpacity(0.8)),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.primaryBlue.withOpacity(0.8),
+                ),
               ),
             ],
           ),
@@ -398,23 +434,42 @@ class _ScanTabState extends ConsumerState<ScanTab> {
               children: [
                 Center(
                   child: AnimatedArcGauge(
-                    riskLevel: calculatedRisk,
-                    value: _getRiskValue().clamp(0.0, 1.0), 
+                    riskLevel: gaugeRisk,
+                    value: gaugeValue,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                _ResultChip(
+                  label: 'Risk Level',
+                  value: _riskLevelStr,
+                  valueColor: riskColor,
+                ),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _ResultChip(label: 'Area', value: '${_area.toStringAsFixed(1)} px'),
-                    _ResultChip(label: 'Healing Score', value: _healingScore.toStringAsFixed(1)),
+                    _ResultChip(
+                      label: 'Infection Risk',
+                      value: '${_infectionRiskScore.toStringAsFixed(1)}%',
+                    ),
+                    _ResultChip(
+                      label: 'Area',
+                      value: '${_area.toStringAsFixed(1)} px',
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _ResultChip(label: 'Redness', value: _redness.toStringAsFixed(1)),
+                    _ResultChip(
+                      label: 'Healing Score',
+                      value: _healingScore.toStringAsFixed(1),
+                    ),
+                    _ResultChip(
+                      label: 'Redness',
+                      value: _redness.toStringAsFixed(1),
+                    ),
                     _ResultChip(label: 'Trend', value: _healingTrend),
                   ],
                 ),
@@ -428,7 +483,10 @@ class _ScanTabState extends ConsumerState<ScanTab> {
                 const SizedBox(height: 8),
                 Text(
                   'Analysis calculated a $_riskLevelStr with a $_healingTrend trend compared to last reading. The overall Healing Score rests at $_healingScore/100.',
-                  style: const TextStyle(color: AppTheme.textSecondary, height: 1.5),
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
               ],
             ),
@@ -439,14 +497,22 @@ class _ScanTabState extends ConsumerState<ScanTab> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(CupertinoIcons.camera_fill, color: Colors.white, size: 20),
                 SizedBox(width: 8),
-                Text('Scan Another Image', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text(
+                  'Scan Another Image',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -460,16 +526,31 @@ class _ScanTabState extends ConsumerState<ScanTab> {
 class _ResultChip extends StatelessWidget {
   final String label;
   final String value;
+  final Color? valueColor;
 
-  const _ResultChip({required this.label, required this.value});
+  const _ResultChip({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+        ),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: valueColor,
+          ),
+        ),
       ],
     );
   }

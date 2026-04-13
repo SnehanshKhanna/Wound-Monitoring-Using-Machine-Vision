@@ -18,7 +18,8 @@ class AnimatedArcGauge extends StatefulWidget {
   State<AnimatedArcGauge> createState() => _AnimatedArcGaugeState();
 }
 
-class _AnimatedArcGaugeState extends State<AnimatedArcGauge> with SingleTickerProviderStateMixin {
+class _AnimatedArcGaugeState extends State<AnimatedArcGauge>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -29,9 +30,10 @@ class _AnimatedArcGaugeState extends State<AnimatedArcGauge> with SingleTickerPr
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _animation = Tween<double>(begin: 0, end: widget.value).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _animation = Tween<double>(
+      begin: 0,
+      end: widget.value,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
     _controller.forward();
   }
 
@@ -39,9 +41,10 @@ class _AnimatedArcGaugeState extends State<AnimatedArcGauge> with SingleTickerPr
   void didUpdateWidget(AnimatedArcGauge oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
-      _animation = Tween<double>(begin: _animation.value, end: widget.value).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-      );
+      _animation = Tween<double>(begin: _animation.value, end: widget.value)
+          .animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+          );
       _controller.forward(from: 0);
     }
   }
@@ -75,15 +78,6 @@ class _AnimatedArcGaugeState extends State<AnimatedArcGauge> with SingleTickerPr
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                  ),
-                ),
-                Text(
-                  widget.riskLevel.label.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: widget.riskLevel.color,
-                    letterSpacing: 1.2,
                   ),
                 ),
               ],
