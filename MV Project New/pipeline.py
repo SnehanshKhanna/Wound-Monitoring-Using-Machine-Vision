@@ -137,7 +137,7 @@
 
 import cv2
 import os
-
+import random
 import os
 
 from predict import predict_mask
@@ -259,9 +259,9 @@ if __name__ == "__main__":
         print("Using image:", test_image)
 
     result = analyze(
-        image_path="fusc_0026.png",
+        image_path="image.png",
         # 🔥 IMPORTANT: use correct path
-        gt_mask_path="fusc_0026_mask.png",
+        gt_mask_path=None,
         visualize=True
     )
 
