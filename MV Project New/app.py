@@ -22,11 +22,19 @@ def analyze_image():
 
     file = request.files["image"]
 
+    #  GET USER ID (IMPORTANT)
+    user_id = request.form.get("user_id", "default_user")
+
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(filepath)
 
-    # 🔥 UPDATED CALL
-    result = analyze(filepath, gt_mask_path=None, visualize=False)
+    # PASS USER ID
+    result = analyze(
+        filepath,
+        user_id=user_id,
+        gt_mask_path=None,
+        visualize=False
+    )
 
     return jsonify(result)
 

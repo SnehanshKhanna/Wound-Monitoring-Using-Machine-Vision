@@ -29,9 +29,7 @@ def calculate_infection_risk(features):
 
 def compute_healing_score(current_features, baseline_features=None):
 
-    # ---------------------------------------------------------
-    # 🔥 0. No wound
-    # ---------------------------------------------------------
+    # 0. No wound case
     if current_features.get("area", 0) == 0:
         return 100
 
