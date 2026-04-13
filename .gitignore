@@ -1,0 +1,17 @@
+# Python / Machine Learning
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.env
+
+# Flutter / Dart
+**/build/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Mac/OS
+.DS_Store
