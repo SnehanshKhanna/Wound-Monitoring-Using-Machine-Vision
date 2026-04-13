@@ -97,7 +97,7 @@
 #     }
 
 #     # ---------------------------------------------------
-#     # ✅ METRICS (only if GT mask is provided)
+#     #  METRICS (only if GT mask is provided)
 #     # ---------------------------------------------------
 #     if gt_mask_path is not None:
 #         gt_mask = cv2.imread(gt_mask_path, 0)
@@ -112,7 +112,7 @@
 #         gt_mask = None
 
 #     # ---------------------------------------------------
-#     # ✅ VISUALIZATION (optional)
+#     #  VISUALIZATION (optional)
 #     # ---------------------------------------------------
 #     if visualize:
 #         show_results(image, pred_mask, gt_mask)
@@ -144,6 +144,7 @@ from predict import predict_mask
 from features import extract_features
 from decision import risk_level
 from scoring import compute_healing_score
+from scoring import calculate_infection_risk
 
 from metrics import dice_score, iou_score
 from visualize import show_results
@@ -157,7 +158,7 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
     image = cv2.imread(image_path)
 
     if image is None:
-        raise ValueError(f"❌ Image not found: {image_path}")
+        raise ValueError(f" Image not found: {image_path}")
 
     image = cv2.resize(image, (256, 256))
 
@@ -175,6 +176,7 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
     # Scoring + Risk
     # -------------------------------
     healing_score = compute_healing_score(features)
+    infection_risk = calculate_infection_risk(features)
     risk = risk_level(healing_score, features)
 
     # -------------------------------
@@ -185,7 +187,9 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
         "area_percent": features["area_percent"],
         "perimeter": features["perimeter"],
         "redness": features["redness"],
+        "periwound_redness": features["periwound_redness"],
         "risk_level": risk,
+        "infection_risk": infection_risk,
         "healing_score": healing_score,
 
         # Texture
@@ -220,10 +224,10 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
             results["dice_score"] = round(dice, 4)
             results["iou_score"] = round(iou, 4)
         else:
-            print(f"⚠️ Failed to load GT mask: {gt_mask_path}")
+            print(f" Failed to load GT mask: {gt_mask_path}")
     else:
         if gt_mask_path is not None:
-            print(f"⚠️ GT mask not found: {gt_mask_path}")
+            print(f" GT mask not found: {gt_mask_path}")
 
     print(results)
     # -------------------------------
@@ -236,7 +240,7 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
             else:
                 show_results(image, pred_mask)
         except Exception as e:
-            print(f"⚠️ Visualization error: {e}")
+            print(f" Visualization error: {e}")
 
     return results
 
@@ -246,21 +250,21 @@ def analyze(image_path, gt_mask_path=None, visualize=False):
 # -------------------------------
 if __name__ == "__main__":
 
-    test_folder = "data_wound_seg/test_images"
-    files = os.listdir(test_folder)
+    # test_folder = "data_wound_seg/test_images"
+    # files = os.listdir(test_folder)
 
-    files = [f for f in files if f.endswith((".jpg", ".png", ".jpeg"))]
+    # files = [f for f in files if f.endswith((".jpg", ".png", ".jpeg"))]
 
-    if len(files) == 0:
-        print("❌ No images found")
-    else:
-        test_image = os.path.join(test_folder, random.choice(files))
+    # if len(files) == 0:
+    #     print(" No images found")
+    # else:
+    #     test_image = os.path.join(test_folder, random.choice(files))
 
-        print("Using image:", test_image)
+    #     print("Using image:", test_image)
 
     result = analyze(
-        image_path="image.png",
-        # 🔥 IMPORTANT: use correct path
+        image_path="image2.png",
+        #  IMPORTANT: use correct path
         gt_mask_path=None,
         visualize=True
     )
