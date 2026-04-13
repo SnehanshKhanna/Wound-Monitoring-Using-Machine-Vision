@@ -19,6 +19,10 @@ dependencies:
   connectivity_plus: ^6.1.0
   hive_flutter: ^1.1.0
   image_picker: ^1.1.2
+  firebase_core: ^4.6.0
+  cloud_firestore: ^6.2.0
+  uuid: ^4.3.3
+  image_cropper: ^12.2.0
 
 dev_dependencies:
   flutter_test:
