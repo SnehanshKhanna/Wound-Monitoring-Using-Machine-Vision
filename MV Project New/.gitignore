@@ -1,1 +1,23 @@
-/__pycache__
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+.venv/
+
+# OS
+.DS_Store
+
+# Models
+*.h5
+
+# Models
+*.h5
+
+# Mobile app
+mobile_app/
+
+# Python
+__pycache__/
+venv/
