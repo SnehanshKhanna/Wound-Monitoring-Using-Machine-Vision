@@ -1,0 +1,29 @@
+name: wound_monitoring
+description: "A comprehensive Flutter UI for the Smart Wound Monitoring System."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  dio: ^5.7.0
+  google_fonts: ^6.2.1
+  fl_chart: ^0.69.0
+  lottie: ^3.1.3
+  connectivity_plus: ^6.1.0
+  hive_flutter: ^1.1.0
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
